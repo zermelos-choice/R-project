@@ -1,0 +1,332 @@
+---
+title: "R Project"
+author: "Brad Velasquez"
+date: "5/30/2018"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo= FALSE)
+```
+
+# Problem I
+Create functions which perform the following tasks:
+
+### Part a
+Takes in a vector, and subtracts the mean and divides by the standard deviation (I.e., for every xi finds (xi − x ̄)/s).
+Then returns the standard deviation of the result. Test the function on the following vector: X = 1:100.
+
+Consider the function below
+```{r}
+func1 <- function(V) {
+    x<-(V-mean(V))/sd(V)
+    return(sd(x))
+}
+
+
+```
+If `V=1:100`, then the function outputs 
+
+```{r}
+func1(1:100)
+```
+
+### Part b
+Takes in a vector and finds the values which are (x ̄ − 2s, x ̄ + 2s), where s is the sample standard deviation, and returns both values, with labels of “lower” and “upper” respectively. Test the function on the following vector: X = 1:100
+
+Consider the function below:
+```{r}
+func2<-function(v){
+good.values1<-v[(v<mean(v)+2*sd(v)) & (v>mean(v)-2*sd(v))]
+
+cat("lower bound = ", mean(v)-2*sd(v));
+
+cat("upper bound = ", mean(v)+2*sd(v))
+
+#print(good.values1)
+
+}
+
+func2
+
+```
+With the test vector `V<-1:100`, the function outputs  
+```{r}
+output<-func2(1:100)
+```
+
+### Part c
+Takes in a vector, and calculates the mean after removing any observations that are more than 3 standard deviations from the mean. Test the function on the following vector: `X = c(1:100,200,300)`
+
+Once again, consider the following function:
+```{r}
+
+func3<-function(v){
+good.values2<-v[(v<mean(v)+3*sd(v)) & (v>mean(v)-3*sd(v))]
+
+}
+func3
+```
+Then using the test vector `X<-c(1:100,200,300)`, the function outputs the following 
+```{r}
+X<-c(1:100,200,300)
+func3(X)
+```
+This output is valid since 
+```{r}
+cat("The upper bound is", mean(X)+3*sd(X))
+cat("The lower bound is", mean(X)-3*sd(X))
+```
+
+
+# Problem II
+Our goal for this problem is to simulate a fair coin flip, and determine how many flips are required for the probability of a head to be approximately 1/2. 
+
+### part a
+We begin by sampling 20 flips of a fair coin using the sample function. I will call this variable `flips`, and its output for a single simulation is
+```{r}
+flips20 <- sample(c(0,1), 20, replace = TRUE, prob = c(0.5, 0.5))
+flips20
+```
+From our simulation, we can use the `sum()` function to determine the total number of heads. This will allow us to determine the probability of getting a head.
+Computing then yields
+```{r}
+total.heads20<-sum(flips20)
+cat("The total number of heads in our simulation is", total.heads20)
+```
+Therefore, from the simulation, the probability of flipping a head is given by
+```{r}
+Pheads<-total.heads20/20
+
+cat("P(Heads) =", Pheads)
+
+
+```
+
+
+
+### part b
+Now we wish to increase the number of trials to `n=10^k` for `k=1,2,3,4,5`.
+First we create a function that will simulate the trial for `n=10^k` with `k=1,2,3,...`, fixed. This function will make applying sapply very easy.
+```{r}
+total.tosses<-function(Tosses){
+sample(c(0,1), 10^Tosses, replace = TRUE, prob = c(0.5, 0.5))
+  }
+total.tosses
+multisim<-sapply(1:5, total.tosses)
+total.headsmulti<-vapply(multisim, sum, c("Total number of heads"=0))
+```
+
+From the function given above, we can compute the the number of heads and the probability of getting heads in each simulation, respectively, which yields the following vectors:
+
+```{r}
+cat("The total number of heads is ",total.headsmulti)
+multi.prob=list()
+for (L in 1:5) {
+  multi.prob[L]<-total.headsmulti[L]/10^L
+#print(prob[L])
+}
+approx.prob<-unlist(multi.prob, use.names=FALSE)
+
+cat("P(Heads) = ",approx.prob)
+```
+
+### part c
+Next, we will determine the error between our simulation and the true probability. Namely, we will determine the value of `e_i=|0.5-P_i|`, where `P_i` corresponds to the ith element in the `approx.prob` vector. So the error vector is given by:
+
+```{r}
+true.prob<-c(0.5,0.5,0.5,0.5,0.5)
+error<-abs(true.prob-approx.prob)
+error
+```
+
+### part d
+For arbitary large `n`, we expect that the error to converge to 0 by the law of large numbers. To be more precise, if `I_i`, is an indicator R.V., where `I_i=1` if toss `i` is heads, `0` else. Then `(1/n)*(I_1+...+I_n)` converges to `E(I_n)=1/2` as `n` goes to infinity. 
+
+
+
+
+# Problem IV
+In the problem that follows we will be simulating a binomial random variable. Namely, let `p=0.05` be the probability that a student fails to turn in their homework. Then `q=1-p=0.95` is the probability that a student turns in their homework. 
+
+
+### part a
+To begin we will use the sample function using the given parameters.
+Let `X` denote the total number of student that did not turn in their homework. Then 
+```{r}
+#student.sample40<-sample(c(0,1), 40, replace = TRUE, prob = c(0.05, 0.95))
+student.sample <- function(n){
+  turnedin <- sample(0:1, size = n, replace = TRUE, prob=c(0.95,0.05))
+  return(sum(turnedin))
+}
+cat("X =", student.sample(40))
+
+
+
+```
+
+
+### part b
+Repeat (a) 1000000 times (you should have 1000000 values for “number of successes”,or X), plot a histogram of your result (do not print out the 1000000 values!!). Is the distribution symmetric? Explain.
+
+We now replicate the simulation from part a `10^6` times. Doing so yields the following  histogram.
+
+```{r}
+simulation<-replicate(n = 10^6, expr = student.sample(40));
+plot(table(simulation), xlab = 'Total # of HW Not Turned In', ylab = 'Frequency', main = '10^6 Simulations of Class Homework')
+#hist(table(simulation), xlab = 'Total # of HW Not Turned In', ylab = 'Frequency', main = '10^6 Simulations of Class Homework')
+```
+
+We see that the histogram is not symmetric. Namely, it is left skewed due to the probability of a student not turning in their homework, `p=0.05`, being relatively small compared to the probability of a student turning in their homework, `q=0.95`.
+
+
+### part c
+Next, we calculate the mean and standard deviation using part b. 
+
+```{r}
+simaverage<-sum(simulation)/length(simulation)
+cat("X_bar = ", simaverage)
+simdeviation<-sd(simulation)
+cat("s_X = ", simdeviation)
+```
+
+### part d
+Estimate the probability that all students turned in their homework based on your simulation from I(b).
+
+From the simulation we can calucluate the probability as follows
+
+```{r}
+cat("P(X=0) = ",sum(simulation == 0)/length(simulation))
+#cat("P(All students turned in their homework) =", sum(student.sample40)/40)
+```
+
+### part e
+Estimate the probability that at least two students did not turn in their homework based on your simulation from I(b).
+
+If `X` denotes the number of students who did not turn in their homeowork, then we can compute `P(X>=2)` as follows 
+```{r}
+cat("P(X>=2) = ",sum(simulation >= 2)/length(simulation))
+
+#cat("P(X>=2) = ", (40-sum(student.sample40))/40)
+```
+
+
+
+
+### part f
+What is the median number of students who will forget their homework based on your simulation from I(b)?
+
+If `M` denote the median, then we have that
+```{r}
+cat("M = ", median(simulation))
+```
+
+
+
+
+# Problem V
+
+To begin we must change our working directory so that we can import the crime.csv. 
+```{r}
+setwd("/Users/brad/Downloads/STA 32/R Project")
+crime.data<-read.csv("crime.csv")
+```
+### part a
+Plot a scatter plot of Y and X, being sure to label the axes and give a main title.
+
+
+Now that we have the crime data stored, we will begin analyzing the data. Consider the following scatterplot, where the blue line is our estimated regression line.
+```{r}
+crime.model<-lm(rate ~ dip, data=crime.data)
+crime.model
+plot(crime.data$dip,crime.data$rate,main="Crime Rate v. Percent of ind. w/ Diploma", xlab="dip (%)",ylab="rate");abline(crime.model,col="blue")
+```
+
+
+### part b
+Calculate the estimated regression line.
+
+The estimated linear regression line can be obtained from the summary of crime.model, which is displayed below.
+```{r}
+summary.lm(crime.model)
+```
+Thus, the estimated regression model is 
+`y=20517.60-170.58x_i+e_i` where `e_i` is the error of the ith coordinate of our data set. 
+
+### part c
+Interpret the slope and intercept (if appropriate) in terms of the problem.
+
+If the percentage of individuals in the county with at least a high-school diploma is 0, then the expected crime rate `20517.60` crimes per `100,000` residents for the counties.
+
+Moreover, from a `1%` increase in individuals with at least a high-school diploma, we expect a decrease of `170.58` crimes per `100,000` residents in the counties.  
+
+### part d
+Does there appear to be outliers in the plot from (a)? If so, identify them in R (for example, list the pair (X,Y) that are outliers, or equivalently the row).
+
+
+
+Recall if `Q1`, `Q3` denote the first and third quartiles, respectively, and `IQR` denotes the interquartile range, then any value which is not in the interval `[Q1-3/2*IQR,Q3+3/2*IQR]` is considered an outlier. 
+So computing the code below gives us the following two bounds. 
+```{r}
+iqr<-IQR(crime.data$rate)
+lower.data<-5020.5-3/2*iqr
+upper.data<-8840+3/2*iqr
+cat("The upper bound is ", upper.data)
+cat("The lower bound is ", lower.data)
+
+```
+Now comparing the above with our `crime.data$rate`, we see that all values are contained in the interval. Hence there are no outliers. 
+Note: we can also use the `boxplot()` function to verify this, but the above was done as a sanity check. 
+
+### part e
+Create a QQ plot (normal probability plot) of the residuals. Does it appear that they are normally distributed? Explain.
+
+
+Next we compute the QQ-plot, then analyze whether or not the residuals are normally distributed.
+
+
+```{r}
+#hist(crime.model$residuals)
+qqnorm(crime.model$residuals); qqline(crime.model$residuals,col="red")
+```
+
+
+
+From this plot we see that the tail of the probability distribution is "heavy", in the sense that the distribution is left skewed. Therefore, the residuals are not normally distributed. 
+Note: This behavior is captured by the histogram of residuals displayed below
+```{r}
+hist(crime.model$residuals)
+```
+
+
+### part f
+Create a plot of the errors vs. the fitted values (Yˆi’s). Does it appear the variance of the errors is constant? Explain.
+
+Consider the plot below. 
+
+
+```{r}
+plot(crime.model$fitted.values,crime.model$residuals, xlab="Predicted", ylab="Residual"); abline(0, 0, col="red"); abline(5000, 0, col="blue");abline(-4000, 0, col="blue")
+
+```
+
+We can see that the constant is approximately constant, since the residuals that lie within the blue boundary are about the same, only tapering off at the predicted extreme values (namely, 5000 and 10,000). 
+
+### part g
+Find the `95%` confidence interval for the slope, and interpret it in terms of the problem. Does the interval suggest
+there is a significant linear relationship? Explain.
+
+
+Finally, we compute the confidence interval, which yields:
+
+```{r}
+confint(crime.model, level=0.95)
+
+```
+Recall that from our model, `y=B_0+B_1*x_i+e_i`, `B_1` is the amount that we expect the crime rate to increase per `100,000` residents when the the percentage of individuals high school diploma increases by `1`.
+
+So, we are `95%` confident that the true value of `B_1` is between and `-253.2798` and   `-87.87061`.
+
+## Appendix Code
+```{r, ref.label=knitr::all_labels(),echo=TRUE,eval=FALSE}
+
+```
